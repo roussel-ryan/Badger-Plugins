@@ -142,11 +142,6 @@ class Environment(environment.Environment):
     def set_variables(self, variable_inputs: Dict[str, float]):
         assert self.interface, 'Must provide an interface!'
 
-<<<<<<< Updated upstream
-        if self.readonly:
-            return
-
-=======
         # implement hysteresis processes
         # 1) ID which components are subject to hysteresis
         # 2) for each component that has hysteresis do the following
@@ -195,7 +190,6 @@ class Environment(environment.Environment):
                 time.sleep(self.trim_delay)
 
         # set all variables
->>>>>>> Stashed changes
         self.interface.set_values(variable_inputs)
 
         if not self.use_check_var:
