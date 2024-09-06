@@ -91,6 +91,8 @@ class Environment(environment.Environment):
 
     epsilon: float = 1e-8  # avoid divided by zero in relative FEL jitter
 
+    overshoot_fraction: float = 0.1
+
     def get_bounds(self, variable_names):
         assert self.interface, 'Must provide an interface!'
 
@@ -140,9 +142,60 @@ class Environment(environment.Environment):
     def set_variables(self, variable_inputs: Dict[str, float]):
         assert self.interface, 'Must provide an interface!'
 
+<<<<<<< Updated upstream
         if self.readonly:
             return
 
+=======
+        # implement hysteresis processes
+        # 1) ID which components are subject to hysteresis
+        # 2) for each component that has hysteresis do the following
+        #   - ID if its a unipolar or bipolar PS
+        #   - ID if we are going in the positive(negative) direction
+        #   - if positive -> set pv as normal
+        #   - if negative ->
+        #       - get total range of settings
+        #       - decrease setting beyond setpoint + 0.1*max_range
+        #       - set to final pv point
+
+        # if overshooting to mitigate hysteresis is active
+        if self.overshoot_fraction != 0.0:
+            hysteresis_elements = [
+                name for name in variable_inputs.keys() if "QUAD" in name
+            ]
+
+            # get the bounds for each
+            current_vals = self.interface.get_values(
+                hysteresis_elements
+            )
+
+            # if we want to make negative changes then first overshoot in the
+            # negative direction
+            negative_changes = {}
+            for name in hysteresis_elements:
+                if variable_inputs[name] < current_vals[name]:
+                    negative_changes[name] = variable_inputs.pop(name)
+
+            if len(negative_changes):
+                # if there are any negative changes then overshoot in the neg direction
+                low = self.interface.get_values(
+                    [name + ".DRVL" for name in negative_changes]
+                )
+                high = self.interface.get_values(
+                    [name + ".DRVH" for name in negative_changes]
+                )
+                overshoot_values = {
+                    name: current_vals[name] -
+                          (high[name] - low[name])*self.overshoot_fraction
+                    for name in negative_changes
+                }
+
+                # set the overshoot values
+                self.interface.set_values(overshoot_values)
+                time.sleep(self.trim_delay)
+
+        # set all variables
+>>>>>>> Stashed changes
         self.interface.set_values(variable_inputs)
 
         if not self.use_check_var:
